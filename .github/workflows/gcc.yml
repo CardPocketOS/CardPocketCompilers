@@ -33,7 +33,7 @@ jobs:
           cd toolchains_to_export && zip -r ../release_assets/arm-none-eabi-gcc-ubuntu.zip arm-none-eabi-gcc && cd ..
 
       - name: Install RISC-V Toolchain
-        uses: xpack/setup-xpack-action@v3
+        uses: gregdavill/setup-riscv-gnu-toolchain@v2.0
         with:
           package-xpm: '@xpack-dev-tools/riscv-none-elf-gcc@latest'
 
