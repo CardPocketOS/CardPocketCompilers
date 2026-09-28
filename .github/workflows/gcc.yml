@@ -1,4 +1,4 @@
-name: Cross-Compilation & Release
+name: Package Cross-Compilers to Release
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - 'start_compile*'
 
 jobs:
-  build-and-release:
+  package-toolchains:
     runs-on: ubuntu-latest
 
     permissions:
@@ -16,42 +16,59 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Prepare directories
+        run: mkdir -p toolchains_to_export release_assets
+
       - name: Install Arm GNU Toolchain
+        id: install-arm
         uses: carlosperate/arm-none-eabi-gcc-action@v1
 
+      - name: Package ARM Toolchain
+        run: |
+          ARM_PATH=$(dirname $(dirname $(which arm-none-eabi-gcc)))
+          echo "ARM compiler found at: $ARM_PATH"
+          
+          cp -r "$ARM_PATH" ./toolchains_to_export/arm-none-eabi-gcc
+          
+          cd toolchains_to_export && zip -r ../release_assets/arm-none-eabi-gcc-ubuntu.zip arm-none-eabi-gcc && cd ..
+
       - name: Install RISC-V Toolchain
-        uses: gregdavill/setup-riscv-gnu-toolchain@v2.0
+        uses: xpack/setup-xpack-action@v3
         with:
           package-xpm: '@xpack-dev-tools/riscv-none-elf-gcc@latest'
 
-      - name: Install ESP-IDF (Xtensa)
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          target: esp32
-          esp_idf_version: v5.2
-
-          command: |
-            git config --global --add safe.directory "*"
-            mkdir -p build_output/xtensa
-            echo "fake esp32 binary" > build_output/xtensa/firmware_esp32.bin
-
-      - name: Package Artifacts into Archives
+      - name: Package RISC-V Toolchain
         run: |
-          mkdir -p release_assets
+          RISCV_PATH=$(dirname $(dirname $(which riscv-none-elf-gcc)))
+          echo "RISC-V compiler found at: $RISCV_PATH"
           
-          cd build_output/arm && zip -r ../../release_assets/firmware-arm.zip . && cd ../..
-          cd build_output/riscv && zip -r ../../release_assets/firmware-riscv.zip . && cd ../..
-          cd build_output/xtensa && zip -r ../../release_assets/firmware-xtensa.zip . && cd ../..
-          
-          ls -l release_assets/
+          cp -r "$RISCV_PATH" ./toolchains_to_export/riscv-none-elf-gcc
+          cd toolchains_to_export && zip -r ../release_assets/riscv-none-elf-gcc-ubuntu.zip riscv-none-elf-gcc && cd ..
 
-      - name: Create GitHub Release and Upload Assets
+      - name: Download and Package Xtensa Toolchain
+        run: |
+          XTENSA_URL="https://github.com"
+          
+          echo "Downloading Xtensa GCC from Espressif..."
+          wget -q $XTENSA_URL -O xtensa-toolchain.tar.gz
+          
+          echo "Unpacking..."
+          tar -xzf xtensa-toolchain.tar.gz -C ./toolchains_to_export/
+          
+          mv ./toolchains_to_export/xtensa-esp-elf ./toolchains_to_export/xtensa-esp32-elf-gcc
+          
+          cd toolchains_to_export && zip -r ../release_assets/xtensa-esp32-elf-gcc-ubuntu.zip xtensa-esp32-elf-gcc && cd ..
+
+      - name: Verify generated archives
+        run: ls -lh release_assets/
+
+      - name: Create GitHub Release and Upload Toolchains
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          name: Toolchains Pack ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: |
-            release_assets/firmware-arm.zip
-            release_assets/firmware-riscv.zip
-            release_assets/firmware-xtensa.zip
+            release_assets/arm-none-eabi-gcc-ubuntu.zip
+            release_assets/riscv-none-elf-gcc-ubuntu.zip
+            release_assets/xtensa-esp32-elf-gcc-ubuntu.zip
