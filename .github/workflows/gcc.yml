@@ -47,7 +47,7 @@ jobs:
 
       - name: Download and Package Xtensa Toolchain
         run: |
-          XTENSA_URL="https://github.com"
+          XTENSA_URL="https://github.com/espressif/crosstool-NG/releases/download/esp-16.1.0_20260609/xtensa-esp-elf-16.1.0_20260609-x86_64-linux-gnu.tar.gz"
           
           echo "Downloading Xtensa GCC from Espressif..."
           wget -q $XTENSA_URL -O xtensa-toolchain.tar.gz
