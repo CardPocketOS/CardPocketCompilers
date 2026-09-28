@@ -20,7 +20,7 @@ jobs:
         uses: carlosperate/arm-none-eabi-gcc-action@v1
 
       - name: Install RISC-V Toolchain
-        uses: xpack-dev-tools/setup-xpack-action@v3
+        uses: gregdavill/setup-riscv-gnu-toolchain@v2.0
         with:
           package-xpm: '@xpack-dev-tools/riscv-none-elf-gcc@latest'
 
